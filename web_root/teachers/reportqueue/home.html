@@ -1,0 +1,117 @@
+~[if#action.~[gpv:action]=]
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<title>Report Queue - My Jobs</title>
+<script src="/scripts/jquery-1.5.1.min.js"></script>
+
+<script type="text/javascript">
+var helperURL = '/~[self]';
+var $c = jQuery.noConflict();
+//Do a continuous async load of the report queue while at least one job status is 'running' or 'pending'.
+$c(function(){
+	refreshq();
+	$c('div.cancelicon a').live('click',cancelReport);
+});
+function refreshq(){
+	$c('#reportq').load(helperURL, {"action":"getqueue"}, checkstatus);
+}
+function checkstatus(){
+	var img='<img height="16" width="16" src="' +$c("#busyimage").attr("src")+'" />';
+	var item =$c(".rstatus").filter(function(index){
+		return /(pending)|(running)/i.test(this.innerHTML);
+	}).append(img);
+	$c('.rstatus a').attr('target','_blank'); //alter all reports to open in new tab
+	if(item.length>0){setTimeout("refreshq()", 5000);}	
+}
+function runReport(rptID){
+	$c.get(helperURL,{ report_batch_jobID:rptID,ac:"report_batch_runjobagain"},refreshq);
+}
+function cancelReport(){
+	var link = $c(this).attr("href");
+	var acval = gup(link, "ac");
+	var jobid = gup(link, "report_batch_jobID");
+	$c.get(helperURL, {"report_batch_jobID":jobid, "ac":acval}, refreshq);
+	return false;//override click event
+}
+function deleteAll(){
+	$c.get(helperURL,{ "deleteall":"true","ac":"report_batch_deletejob"},refreshq);	
+}
+function gup(url, name){
+	name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+	var regexS = "[\\?&]"+name+"=([^&#]*)";
+	var regex = new RegExp( regexS );
+	var results = regex.exec( url );
+	if( results == null )
+		return "";
+	else
+		return results[1];
+}
+
+</script>
+~[wc:commonscripts]
+<link href="/images/css/screen.css" rel="stylesheet" media="screen">
+<link href="/images/css/print.css" rel="stylesheet" media="print">
+<style type="text/css" >
+  .report_queue a:visited {color: #800080;}
+</style>
+</head>
+<body>
+<img id="busyimage" style="display:none;" src="/images/busy_blue.gif" />
+<input type="hidden" name="ac" value="report_batch_runjobagain" />
+<input type="hidden" name="ac" value="report_batch_deletejob" />
+~[wc:teachers_header_css]~[wc:teachers_navigation_css]
+~[SetPostValue:tabname=reports]
+~[wc:teachers_nav_css]
+
+<h1>~[text]psx.html.teachers_reportqueue.home.report_queue__my_jobs1[/text]</h1> 
+
+<div class="button-row">
+ <a href="home.html" class="button">~[text]psx.html.teachers_reportqueue.home.refresh[/text]</a>
+</div>
+<!-- start of content and bounding box -->
+<div class="box-round">
+<!--BEGIN dynamic content holder-->
+<div id="reportq"></div>
+<!--END dynamic content holder-->
+<br />
+<div class="button-row"></div>
+</div>
+<br>
+<!-- end of content of bounding box -->
+~[wc:teachers_footer_css]
+</body>
+</html>
+[/if#action]
+~[if#action.~[gpv:action]=getqueue]
+	<table border="0" cellspacing="0" cellpadding="4">
+	<thead>
+	<tr bgcolor="#f6f6f6">
+		<th>~[text:psx.html.teachers_reportqueue.home.created]</th>
+		<th>~[text:psx.html.teachers_reportqueue.home.job_name]</th>
+		<th>School</th>
+		<th>~[text:psx.html.teachers_reportqueue.home.started]</th>
+		<th>~[text:psx.html.teachers_reportqueue.home.ended]</th>
+		<th colspan="2">~[text:psx.html.teachers_reportqueue.home.status]</th>
+	</tr>
+	</thead>
+	<tbody>
+	<tr bgcolor="#edf3fe">~[reports_batch_joblist]
+		<td>~(Creation Date)</td>
+		<td><a href="detail.html?frn=~(frn)">~(ReportID)</a></td>
+		<td>~(decode;~(schoolid);0;District;-1;District;~([39]Abbreviation))</td>
+		<td>[started]</td>
+		<td>[ended]</td>
+		<td class="rstatus">[status]</td>
+		<td style="width: 50px;">
+			<a href="#" onclick="runReport(~(internal_id));"> <img height="16" width="16" style="margin-bottom:2px" src="/images/btn_reports_rerun.gif" alt="Run report again" border="0"  /></a>
+			<div class="cancelicon" style="display:inline">[cancel]</div>
+		</td>
+	</tr>
+	<tr>
+		<td colspan="6">~[text:psx.html.teachers_reportqueue.home.click_on_a_job_name_to_view_the_job_detail_page_which_provid]<p>~[text:psx.html.admin_reportqueue.home.if_a_job_is_running_or_is_waiting_to_be_run_you_can_cancel_i]<p>~[text:psx.html.admin_reportqueue.home.completed_and_canceled_jobs_will_automatically_be_deleted_af,param:~[displaypref:repo_batch_timetolive]]~[if.modaccess]~[text:psx.html.admin_reportqueue.home.click_on_the_trash_can_icon_to_immediately_delete_an_individ]<a href="home.html?ac=report_batch_deletejob&deleteall=true">~[text:psx.html.admin_reportqueue.home.delete_all]</a>~[text:psx.html.admin_reportqueue.home.completed_or_canceled_jobs][/if]
+	</tr>
+	</tbody>
+	</table>
+[/if#action]
